@@ -13,7 +13,7 @@ semantic_weight_mode: softmax
 late_semantic_optimization: 0
 use_symmetric_ce: False
 probabilistic_ce_mode: "TTAConf"
-use_feature_regularization: False
+use_feature_regularization: True
 lambda_feat: 0.04
 ce_alpha: 0.85
 ce_beta: 0.15
