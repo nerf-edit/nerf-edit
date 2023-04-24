@@ -70,6 +70,94 @@
 </nav!-->
 
 
+<section class="section">
+  <div class="container is-max-desktop">
+    <!-- Abstract. -->
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Overview</h2>
+        <div class="content has-text-justified">
+          <p>
+            
+          </p>
+          <p>
+            Our approach highlights high-fidelity 3D scene editing 
+            
+            
+            augments neural radiance fields
+            (NeRF) by optimizing an
+            additional continuous volumetric deformation field that warps each observed point into a
+            canonical 5D NeRF.
+            We observe that these NeRF-like deformation fields are prone to local minima, and
+            propose a coarse-to-fine optimization method for coordinate-based models that allows for
+            more robust optimization.
+            By adapting principles from geometry processing and physical simulation to NeRF-like
+            models, we propose an elastic regularization of the deformation field that further
+            improves robustness.
+          </p>
+          <p>
+            We show that <span class="dnerf">Nerfies</span> can turn casually captured selfie
+            photos/videos into deformable NeRF
+            models that allow for photorealistic renderings of the subject from arbitrary
+            viewpoints, which we dub <i>"nerfies"</i>. We evaluate our method by collecting data
+            using a
+            rig with two mobile phones that take time-synchronized photos, yielding train/validation
+            images of the same pose at different viewpoints. We show that our method faithfully
+            reconstructs non-rigidly deforming scenes and reproduces unseen views with high
+            fidelity.
+          </p>
+        </div>
+      </div>
+    </div>
+    <!--/ Abstract. -->
+
+    <!-- Interpolating. -->
+    <h3 class="title is-4">Grounded Segment-Anything Predictions (2D Baseline)</h3>
+    <div class="content has-text-justified">
+      <p>
+        We extract per-frame segmentations, text-aligned features for our video through Grounded-SAM.
+        While interpolating images, note the inconsistencies in 2D predictions across frames.
+      </p>
+    </div>
+    <div class="columns is-vcentered interpolation-panel">
+      <!--div class="column is-3 has-text-centered">
+        <img src="./static/images/interpolate_scannet_start.png"
+              class="interpolation-image"
+              alt="Interpolate start reference image."/>
+        <p>Start Frame</p>
+      </div!-->
+      <div class="column interpolation-video-column">
+        <div id="interpolation-image-wrapper">
+          Loading...
+        </div>
+        <input class="slider is-fullwidth is-large is-info"
+                id="interpolation-slider"
+                step="1" min="0" max="100" value="0" type="range">
+      </div>
+      <!--div class="column is-3 has-text-centered">
+        <img src="./static/images/interpolate_scannet_end.png"
+              class="interpolation-image"
+              alt="Interpolation end reference image."/>
+        <p class="is-bold">End Frame</p>
+      </div!-->
+    </div>
+    <br/>
+    <!--/ Interpolating. -->
+
+    <!-- Paper video. -->
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Video</h2>
+        <div class="publication-video">
+          <iframe src="https://www.youtube.com/embed/MrKrnHhk8IA?rel=0&amp;showinfo=0"
+                  frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+        </div>
+      </div>
+    </div>
+    <!--/ Paper video. -->
+  </div>
+</section>
+
 <section class="hero">
   <div class="hero-body">
     <div class="container is-max-desktop">
@@ -151,20 +239,87 @@
   <div class="container is-max-desktop">
     <div class="hero-body">
       <video id="teaser" autoplay muted loop playsinline height="100%">
-        <source src="./static/videos/teaser.mp4"
+        <source src="./static/videos/output_original_replica.mp4"
                 type="video/mp4">
       </video>
       <h2 class="subtitle has-text-centered">
-        <span class="dnerf">Nerfies</span> turns selfie videos from your phone into
-        free-viewpoint
-        portraits.
+        <span class="dnerf"> </span> Consistent 3D Scene Representation from dataset Replica
       </h2>
     </div>
   </div>
 </section>
 
+<section class="hero teaser">
+  <div class="container is-max-desktop">
+    <div class="hero-body">
+      <video id="teaser" autoplay muted loop playsinline height="100%">
+        <source src="./static/videos/output_remove_replica.mp4"
+                type="video/mp4">
+      </video>
+      <h2 class="subtitle has-text-centered">
+         Editing 3D scene in Replica dataset through text <span class="dnerf"> Delete Vase </span>
+      </h2>
+    </div>
+  </div>
+</section>
 
-<section class="hero is-light is-small">
+<section class="hero teaser">
+  <div class="container is-max-desktop">
+    <div class="hero-body">
+      <video id="teaser" autoplay muted loop playsinline height="100%">
+        <source src="./static/videos/output_original_scannet.mp4"
+                type="video/mp4">
+      </video>
+      <h2 class="subtitle has-text-centered">
+        <span class="dnerf"></span> Consistent 3D Scene Representation from dataset ScanNet
+      </h2>
+    </div>
+  </div>
+</section>
+
+<section class="hero teaser">
+  <div class="container is-max-desktop">
+    <div class="hero-body">
+      <video id="teaser" autoplay muted loop playsinline height="100%">
+        <source src="./static/videos/output_remove_table.mp4"
+                type="video/mp4">
+      </video>
+      <h2 class="subtitle has-text-centered">
+        Deleting object 3D scene in Scannet dataset through text <span class="dnerf"> Delete Table </span> 
+      </h2>
+    </div>
+  </div>
+</section>
+
+<section class="hero teaser">
+  <div class="container is-max-desktop">
+    <div class="hero-body">
+      <video id="teaser" autoplay muted loop playsinline height="100%">
+        <source src="./static/videos/output_original_hypersim.mp4"
+                type="video/mp4">
+      </video>
+      <h2 class="subtitle has-text-centered">
+        <span class="dnerf"> </span> Consistent 3D Scene Representation from dataset HyperSim
+      </h2>
+    </div>
+  </div>
+</section>
+
+<section class="hero teaser">
+  <div class="container is-max-desktop">
+    <div class="hero-body">
+      <video id="teaser" autoplay muted loop playsinline height="100%">
+        <source src="./static/videos/output_remove_table.mp4"
+                type="video/mp4">
+      </video>
+      <h2 class="subtitle has-text-centered">
+        Editing 3D scene in HyperSim dataset through text <span class="dnerf"> Remove Table </span> 
+      </h2>
+    </div>
+  </div>
+</section>
+
+<!--section class="hero is-light is-small">
   <div class="hero-body">
     <div class="container">
       <div id="results-carousel" class="carousel results-carousel">
@@ -219,63 +374,7 @@
       </div>
     </div>
   </div>
-</section>
-
-
-<section class="section">
-  <div class="container is-max-desktop">
-    <!-- Abstract. -->
-    <div class="columns is-centered has-text-centered">
-      <div class="column is-four-fifths">
-        <h2 class="title is-3">Overview</h2>
-        <div class="content has-text-justified">
-          <p>
-            
-          </p>
-          <p>
-            Our approach highlights high-fidelity 3D scene editing 
-            
-            
-            augments neural radiance fields
-            (NeRF) by optimizing an
-            additional continuous volumetric deformation field that warps each observed point into a
-            canonical 5D NeRF.
-            We observe that these NeRF-like deformation fields are prone to local minima, and
-            propose a coarse-to-fine optimization method for coordinate-based models that allows for
-            more robust optimization.
-            By adapting principles from geometry processing and physical simulation to NeRF-like
-            models, we propose an elastic regularization of the deformation field that further
-            improves robustness.
-          </p>
-          <p>
-            We show that <span class="dnerf">Nerfies</span> can turn casually captured selfie
-            photos/videos into deformable NeRF
-            models that allow for photorealistic renderings of the subject from arbitrary
-            viewpoints, which we dub <i>"nerfies"</i>. We evaluate our method by collecting data
-            using a
-            rig with two mobile phones that take time-synchronized photos, yielding train/validation
-            images of the same pose at different viewpoints. We show that our method faithfully
-            reconstructs non-rigidly deforming scenes and reproduces unseen views with high
-            fidelity.
-          </p>
-        </div>
-      </div>
-    </div>
-    <!--/ Abstract. -->
-
-    <!-- Paper video. -->
-    <div class="columns is-centered has-text-centered">
-      <div class="column is-four-fifths">
-        <h2 class="title is-3">Video</h2>
-        <div class="publication-video">
-          <iframe src="https://www.youtube.com/embed/MrKrnHhk8IA?rel=0&amp;showinfo=0"
-                  frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-        </div>
-      </div>
-    </div>
-    <!--/ Paper video. -->
-  </div>
-</section>
+</section!-->
 
   
 <section class="section">
@@ -334,12 +433,12 @@
           </p>
         </div>
         <div class="columns is-vcentered interpolation-panel">
-          <div class="column is-3 has-text-centered">
+          <!--div class="column is-3 has-text-centered">
             <img src="./static/images/interpolate_scannet_start.png"
                  class="interpolation-image"
                  alt="Interpolate start reference image."/>
             <p>Start Frame</p>
-          </div>
+          </div!-->
           <div class="column interpolation-video-column">
             <div id="interpolation-image-wrapper">
               Loading...
@@ -348,12 +447,12 @@
                    id="interpolation-slider"
                    step="1" min="0" max="100" value="0" type="range">
           </div>
-          <div class="column is-3 has-text-centered">
+          <!--div class="column is-3 has-text-centered">
             <img src="./static/images/interpolate_scannet_end.png"
                  class="interpolation-image"
                  alt="Interpolation end reference image."/>
             <p class="is-bold">End Frame</p>
-          </div>
+          </div!-->
         </div>
         <br/>
         <!--/ Interpolating. -->
@@ -394,7 +493,8 @@
             There's a lot of excellent work that was introduced around the same time as ours.
           </p>
           <p>
-            <a href="https://arxiv.org/abs/2104.09125">Progressive Encoding for Neural Optimization</a> introduces an idea similar to our windowed position encoding for coarse-to-fine optimization.
+            <a href="https://arxiv.org/abs/2303.09553">LERF: Language Embedded Radiance Fields
+            </a> introduces a method to align language embeddings with 
           </p>
           <p>
             <a href="https://www.albertpumarola.com/research/D-NeRF/index.html">D-NeRF</a> and <a href="https://gvv.mpi-inf.mpg.de/projects/nonrigid_nerf/">NR-NeRF</a>
