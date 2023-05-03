@@ -10,18 +10,23 @@ from torch.utils.data import DataLoader
 from torchvision.utils import make_grid
 from tqdm import tqdm
 import numpy as np
+
+import sys
+sys.path.append('/home/sarthakbhagat/code/panoptic-lifting')
+
 from dataset import PanopLiDataset, create_segmentation_data_panopli
 from model.radiance_field.tensoRF import TensorVMSplit
 from model.renderer.panopli_tensoRF_renderer import TensoRFRenderer
 from trainer import visualize_panoptic_outputs
 from util.camera import distance_to_depth
 from util.misc import get_parameters_from_state_dict
+import pickle
 
 
 def render_panopli_checkpoint(config, trajectory_name, test_only=False):
     output_dir = (Path("runs") / f"{Path(config.dataset_root).stem}_{trajectory_name if not test_only else 'test'}_{Path(config.experiment)}")
     print(output_dir)
-    output_dir.mkdir(exist_ok=True)
+    output_dir.mkdir(parents=True, exist_ok=True)
     device = torch.device("cuda:0")
     test_set = PanopLiDataset(Path(config.dataset_root), "test", (config.image_dim[0], config.image_dim[1]), config.max_depth, overfit=config.overfit, semantics_dir='m2f_semantics', instance_dir='m2f_instance',
                               instance_to_semantic_key='m2f_instance_to_semantic', create_seg_data_func=create_segmentation_data_panopli, subsample_frames=config.subsample_frames)
@@ -53,6 +58,17 @@ def render_panopli_checkpoint(config, trajectory_name, test_only=False):
     # disable this for fast rendering (just add more steps along the ray)
     renderer.update_step_ratio(renderer.step_ratio * 0.5)
 
+    pkl_segmentation_data = pickle.load(open('./data/scannet/scene0423_02/segmentation_data.pkl', 'rb'))
+
+    bboxes = pkl_segmentation_data['gt_bboxes'][0]
+    bboxes['position'] = torch.from_numpy(bboxes['position']).float().cuda()
+    bboxes['orientation'] = torch.from_numpy(bboxes['orientation']).float().cuda()
+    bboxes['extent'] = torch.from_numpy(bboxes['extent']).float().cuda() 
+    # print (bboxes)
+
+    edit = 'duplicate'
+    # edit = None
+
     with torch.no_grad():
         for batch_idx, batch in enumerate(tqdm(trajectory_loader)):
             batch['rays'] = batch['rays'].squeeze(0).to(device)
@@ -60,14 +76,35 @@ def render_panopli_checkpoint(config, trajectory_name, test_only=False):
             outputs = []
             # infer semantics and surrogate ids
             for i in range(0, batch['rays'].shape[0], config.chunk):
-                out_rgb_, out_semantics_, out_instances_, out_depth_, _, _ = renderer(model, batch['rays'][i: i + config.chunk], config.perturb, test_set.white_bg, False)
+                # out_rgb_, out_semantics_, out_instances_, out_depth_, _, _ = renderer.forward_old(model, batch['rays'][i: i + config.chunk], config.perturb, test_set.white_bg, False)
+                # outputs.append([out_rgb_, out_semantics_, out_instances_, out_depth_])
+
+                if edit == 'delete':
+                    out_rgb_, out_semantics_, out_instances_, out_depth_ = renderer.forward_delete(model, batch['rays'][i: i + config.chunk], test_set.white_bg, bboxes)
+                elif edit == 'manipulate':
+                    rotation = torch.eye(3).cuda()
+                    translation = torch.zeros((3)).cuda()
+                    translation[0] = 0.2
+                    out_rgb_, out_semantics_, out_instances_, out_depth_ = renderer.forward_manipulate(model, batch['rays'][i: i + config.chunk], test_set.white_bg, bboxes, translation, rotation)
+                elif edit == 'duplicate':
+                    rotation = torch.eye(3).cuda()
+                    translation = torch.zeros((3)).cuda()
+                    translation[0] = 0.1
+                    out_rgb_, out_semantics_, out_instances_, out_depth_ = renderer.forward_duplicate(model, batch['rays'][i: i + config.chunk], test_set.white_bg, bboxes, translation, rotation)
+                else:
+                    out_rgb_, out_semantics_, out_instances_, out_depth_, _, _ = renderer.forward_old(model, batch['rays'][i: i + config.chunk], config.perturb, test_set.white_bg, False)
+
                 outputs.append([out_rgb_, out_semantics_, out_instances_, out_depth_])
+
             for i in range(len(outputs[0])):
                 concated_outputs.append(torch.cat([outputs[j][i] for j in range(len(outputs))], dim=0))
+        
             p_rgb, p_semantics, p_instances, p_dist = concated_outputs
+
             p_depth = distance_to_depth(test_set.intrinsics[0], p_dist.view(H, W))
             # create surrogate ids
             p_instances = create_instances_from_semantics(p_instances, p_semantics, test_set.segmentation_data.fg_classes)
+
             (output_dir / "vis_semantics_and_surrogate").mkdir(exist_ok=True)
             (output_dir / "pred_semantics").mkdir(exist_ok=True)
             (output_dir / "pred_surrogateid").mkdir(exist_ok=True)

@@ -75,7 +75,7 @@ class TensoRFRenderer(nn.Module):
         box_diag = torch.sqrt(torch.sum(torch.square(box_extent)))
         self.n_samples = int((box_diag / self.step_size).item()) + 1
 
-    def forward(self, tensorf, rays, perturb, white_bg, is_train):
+    def forward_old(self, tensorf, rays, perturb, white_bg, is_train):
         xyz_sampled, z_vals, mask_xyz = sample_points_in_box(rays, self.bbox_aabb, self.n_samples, self.step_size, perturb, is_train)
         viewdirs = rays[:, 3:6].view(-1, 1, 3).expand(xyz_sampled.shape)
         dists = torch.cat((z_vals[:, 1:] - z_vals[:, :-1], torch.zeros_like(z_vals[:, :1])), dim=-1)
@@ -225,7 +225,19 @@ class TensoRFRenderer(nn.Module):
         valid_semantics = tensorf.render_semantic_mlp(None, semantic_features)
         semantics[mask_xyz] = valid_semantics
 
+        semantic_ids = torch.argmax(valid_semantics, -1)
+        mask_ones_id = torch.nonzero(mask_xyz.view(-1) == 1).squeeze(-1)
+        # deletion_ids = mask_ones_id[semantic_ids == 7]
+        deletion_ids = mask_ones_id[semantic_ids == 21]
+        delete_points[deletion_ids] = True
+
         instances[mask_xyz] = tensorf.compute_instance_feature(xyz_sampled[mask_xyz])
+
+        '''semantic_ids = torch.argmax(tensorf.compute_instance_feature(xyz_sampled[mask_xyz]), -1)
+        # print (torch.unique(semantic_ids))
+        mask_ones_id = torch.nonzero(mask_xyz.view(-1) == 1).squeeze(-1)
+        deletion_ids = mask_ones_id[semantic_ids == 7]
+        delete_points[deletion_ids] = True'''
 
         sigma[delete_points.reshape(sigma.shape)] = 0
 
@@ -318,11 +330,107 @@ class TensoRFRenderer(nn.Module):
 
         return rgb_map, semantic_map, instance_map, depth_map
 
+    # @torch.no_grad()
+    # def forward_duplicate(self, tensorf, rays, white_bg, bbox_instance, translation, rotation):
+    #     xyz_sampled, z_vals, mask_xyz = sample_points_in_box(rays, self.bbox_aabb, self.n_samples, self.step_size, 0, False)
+    #     _, manipulated_points = split_points_minimal(xyz_sampled.view(-1, 3), bbox_instance["extent"].unsqueeze(0), (rotation @ bbox_instance["position"] + translation).unsqueeze(0), (rotation @ bbox_instance["orientation"]).unsqueeze(0))
+    #     manipulated_points = manipulated_points[0]
+    #     orig_dim_xyz = xyz_sampled.shape
+    #     xyz_sampled = xyz_sampled.reshape(-1, 3)
+    #     xyz_sampled[manipulated_points, :] = dot(torch.linalg.inv(tr_comp(translation, torch.eye(3).cuda())), xyz_sampled[manipulated_points, :])
+    #     xyz_sampled = xyz_sampled.reshape(orig_dim_xyz)
+
+    #     rgb = torch.zeros((*xyz_sampled.shape[:2], 3), device=xyz_sampled.device)
+    #     semantics = torch.zeros((*xyz_sampled.shape[:2], tensorf.num_semantic_classes), device=xyz_sampled.device)
+    #     instances = torch.zeros((*xyz_sampled.shape[:2], tensorf.dim_feature_instance), device=xyz_sampled.device)
+    #     viewdirs = rays[:, 3:6].view(-1, 1, 3).expand(xyz_sampled.shape)
+    #     orig_dim_viewdirs = viewdirs.shape
+    #     viewdirs = viewdirs.reshape(-1, orig_dim_viewdirs[-1])
+    #     # viewdirs[manipulated_points, :] = (torch.linalg.inv(rotation) @ viewdirs[manipulated_points, :].T).T
+    #     # viewdirs = viewdirs.reshape(orig_dim_viewdirs)
+
+    #     dists = torch.cat((z_vals[:, 1:] - z_vals[:, :-1], torch.zeros_like(z_vals[:, :1])), dim=-1)
+    #     sigma = torch.zeros(xyz_sampled.shape[:-1], device=xyz_sampled.device)
+    #     xyz_sampled = self.normalize_coordinates(xyz_sampled)
+    #     if mask_xyz.any():
+    #         sigma[mask_xyz] = tensorf.compute_density(xyz_sampled[mask_xyz])
+
+    #     # appearance_features = tensorf.compute_appearance_feature(xyz_sampled[mask_xyz])
+    #     # valid_rgbs = tensorf.render_appearance_mlp(viewdirs[mask_xyz], appearance_features)
+    #     # rgb[mask_xyz] = valid_rgbs
+
+    #     semantic_features = tensorf.compute_semantic_feature(xyz_sampled[mask_xyz])
+    #     valid_semantics = tensorf.render_semantic_mlp(None, semantic_features)
+    #     semantics[mask_xyz] = valid_semantics
+
+    #     ########################## addded
+    #     semantic_ids = torch.argmax(valid_semantics, -1)
+    #     mask_ones_id = torch.nonzero(mask_xyz.view(-1) == 1).squeeze(-1)
+    #     deletion_ids = mask_ones_id[semantic_ids == 7]
+    #     manipulated_points[deletion_ids] = True
+
+    #     # print (torch.sum(manipulated_points))
+    #     print (manipulated_points.shape, viewdirs.shape)
+
+    #     viewdirs[manipulated_points, :] = (torch.linalg.inv(rotation) @ viewdirs[manipulated_points, :].T).T
+    #     viewdirs = viewdirs.reshape(orig_dim_viewdirs)
+
+    #     # print(viewdirs.shape)
+
+    #     appearance_features = tensorf.compute_appearance_feature(xyz_sampled[mask_xyz])
+    #     valid_rgbs = tensorf.render_appearance_mlp(viewdirs[mask_xyz], appearance_features)
+    #     rgb[mask_xyz] = valid_rgbs
+    #     #########################
+
+    #     instances[mask_xyz] = tensorf.compute_instance_feature(xyz_sampled[mask_xyz])
+
+    #     alpha, weight, bg_weight = self.raw_to_alpha(sigma, dists * self.distance_scale)
+
+    #     opacity_map = torch.sum(weight, -1)
+    #     rgb_map = torch.sum(weight[..., None] * rgb, -2)
+
+    #     w = weight[..., None]
+    #     if self.semantic_weight_mode == "argmax":
+    #         w = torch.nn.functional.one_hot(w.argmax(dim=1)[:, 0], num_classes=w.shape[1]).unsqueeze(-1)
+    #     if self.stop_semantic_grad:
+    #         w = w.detach()
+    #         semantic_map = torch.sum(w * semantics, -2)
+    #         instance_map = torch.sum(w * instances, -2)
+    #     else:
+    #         semantic_map = torch.sum(w * semantics, -2)
+    #         instance_map = torch.sum(w * instances, -2)
+
+    #     if self.semantic_weight_mode == "softmax":
+    #         semantic_map = semantic_map / (semantic_map.sum(-1).unsqueeze(-1) + 1e-8)
+    #         semantic_map = torch.log(semantic_map + 1e-8)
+
+    #     if white_bg:
+    #         rgb_map = rgb_map + (1. - opacity_map[..., None])
+
+    #     rgb_map = rgb_map.clamp(0, 1)
+
+    #     with torch.no_grad():
+    #         depth_map = torch.sum(weight * z_vals, -1)
+
+    #     return rgb_map, semantic_map, instance_map, depth_map
+
     @torch.no_grad()
     def forward_duplicate(self, tensorf, rays, white_bg, bbox_instance, translation, rotation):
         xyz_sampled, z_vals, mask_xyz = sample_points_in_box(rays, self.bbox_aabb, self.n_samples, self.step_size, 0, False)
         _, manipulated_points = split_points_minimal(xyz_sampled.view(-1, 3), bbox_instance["extent"].unsqueeze(0), (rotation @ bbox_instance["position"] + translation).unsqueeze(0), (rotation @ bbox_instance["orientation"]).unsqueeze(0))
         manipulated_points = manipulated_points[0]
+
+        ########################
+        semantic_features = tensorf.compute_semantic_feature(xyz_sampled[mask_xyz])
+        valid_semantics = tensorf.render_semantic_mlp(None, semantic_features)
+
+        semantic_ids = torch.argmax(valid_semantics, -1)
+        mask_ones_id = torch.nonzero(mask_xyz.view(-1) == 1).squeeze(-1)
+        # print (torch.unique(semantic_ids))
+        deletion_ids = mask_ones_id[semantic_ids == 7]
+        manipulated_points[deletion_ids] = True
+        ########################
+
         orig_dim_xyz = xyz_sampled.shape
         xyz_sampled = xyz_sampled.reshape(-1, 3)
         xyz_sampled[manipulated_points, :] = dot(torch.linalg.inv(tr_comp(translation, torch.eye(3).cuda())), xyz_sampled[manipulated_points, :])
@@ -383,11 +491,107 @@ class TensoRFRenderer(nn.Module):
 
         return rgb_map, semantic_map, instance_map, depth_map
 
+
+    # @torch.no_grad()
+    # def forward_manipulate(self, tensorf, rays, white_bg, bbox_instance, translation, rotation):
+    #     xyz_sampled, z_vals, mask_xyz = sample_points_in_box(rays, self.bbox_aabb, self.n_samples, self.step_size, 0, False)
+    #     _, manipulated_points = split_points_minimal(xyz_sampled.view(-1, 3), bbox_instance["extent"].unsqueeze(0), (bbox_instance["position"] + translation).unsqueeze(0), (rotation @ bbox_instance["orientation"]).unsqueeze(0))
+    #     manipulated_points = manipulated_points[0]
+    #     _, bbox_points = split_points_minimal(xyz_sampled.view(-1, 3), bbox_instance["extent"].unsqueeze(0), bbox_instance["position"].unsqueeze(0), bbox_instance["orientation"].unsqueeze(0))
+    #     bbox_points = bbox_points[0]
+    #     orig_dim_xyz = xyz_sampled.shape
+    #     xyz_sampled = xyz_sampled.reshape(-1, 3)
+
+    #     xyz_sampled[manipulated_points, :] = (rotation @ (xyz_sampled[manipulated_points, :] - bbox_instance["position"]).T).T + bbox_instance["position"] - translation
+    #     xyz_sampled = xyz_sampled.reshape(orig_dim_xyz)
+
+    #     rgb = torch.zeros((*xyz_sampled.shape[:2], 3), device=xyz_sampled.device)
+    #     semantics = torch.zeros((*xyz_sampled.shape[:2], tensorf.num_semantic_classes), device=xyz_sampled.device)
+    #     instances = torch.zeros((*xyz_sampled.shape[:2], tensorf.dim_feature_instance), device=xyz_sampled.device)
+    #     viewdirs = rays[:, 3:6].view(-1, 1, 3).expand(xyz_sampled.shape)
+    #     orig_dim_viewdirs = viewdirs.shape
+    #     viewdirs = viewdirs.reshape(-1, orig_dim_viewdirs[-1])
+    #     # viewdirs[manipulated_points, :] = (torch.linalg.inv(rotation) @ viewdirs[manipulated_points, :].T).T
+    #     # viewdirs = viewdirs.reshape(orig_dim_viewdirs)
+
+    #     dists = torch.cat((z_vals[:, 1:] - z_vals[:, :-1], torch.zeros_like(z_vals[:, :1])), dim=-1)
+    #     sigma = torch.zeros(xyz_sampled.shape[:-1], device=xyz_sampled.device)
+    #     xyz_sampled = self.normalize_coordinates(xyz_sampled)
+    #     if mask_xyz.any():
+    #         sigma[mask_xyz] = tensorf.compute_density(xyz_sampled[mask_xyz])
+
+    #     appearance_features = tensorf.compute_appearance_feature(xyz_sampled[mask_xyz])
+    #     # valid_rgbs = tensorf.render_appearance_mlp(viewdirs[mask_xyz], appearance_features)
+    #     # rgb[mask_xyz] = valid_rgbs
+
+    #     semantic_features = tensorf.compute_semantic_feature(xyz_sampled[mask_xyz])
+    #     valid_semantics = tensorf.render_semantic_mlp(None, semantic_features)
+    #     semantics[mask_xyz] = valid_semantics
+
+    #     ################### added 
+    #     semantic_ids = torch.argmax(valid_semantics, -1)
+    #     mask_ones_id = torch.nonzero(mask_xyz.view(-1) == 1).squeeze(-1)
+    #     deletion_ids = mask_ones_id[semantic_ids == 7]
+    #     manipulated_points[deletion_ids] = True
+
+    #     viewdirs[manipulated_points, :] = (torch.linalg.inv(rotation) @ viewdirs[manipulated_points, :].T).T
+    #     viewdirs = viewdirs.reshape(orig_dim_viewdirs)
+
+    #     valid_rgbs = tensorf.render_appearance_mlp(viewdirs[mask_xyz], appearance_features)
+    #     rgb[mask_xyz] = valid_rgbs
+    #     #############
+
+    #     instances[mask_xyz] = tensorf.compute_instance_feature(xyz_sampled[mask_xyz])
+
+    #     sigma[torch.logical_and(bbox_points, ~manipulated_points).reshape(sigma.shape)] = 0
+    #     alpha, weight, bg_weight = self.raw_to_alpha(sigma, dists * self.distance_scale)
+
+    #     opacity_map = torch.sum(weight, -1)
+    #     rgb_map = torch.sum(weight[..., None] * rgb, -2)
+
+    #     w = weight[..., None]
+    #     if self.semantic_weight_mode == "argmax":
+    #         w = torch.nn.functional.one_hot(w.argmax(dim=1)[:, 0], num_classes=w.shape[1]).unsqueeze(-1)
+    #     if self.stop_semantic_grad:
+    #         w = w.detach()
+    #         semantic_map = torch.sum(w * semantics, -2)
+    #         instance_map = torch.sum(w * instances, -2)
+    #     else:
+    #         semantic_map = torch.sum(w * semantics, -2)
+    #         instance_map = torch.sum(w * instances, -2)
+
+    #     if self.semantic_weight_mode == "softmax":
+    #         semantic_map = semantic_map / (semantic_map.sum(-1).unsqueeze(-1) + 1e-8)
+    #         semantic_map = torch.log(semantic_map + 1e-8)
+
+    #     if white_bg:
+    #         rgb_map = rgb_map + (1. - opacity_map[..., None])
+
+    #     rgb_map = rgb_map.clamp(0, 1)
+
+    #     with torch.no_grad():
+    #         depth_map = torch.sum(weight * z_vals, -1)
+
+    #     return rgb_map, semantic_map, instance_map, depth_map
+
+
     @torch.no_grad()
     def forward_manipulate(self, tensorf, rays, white_bg, bbox_instance, translation, rotation):
         xyz_sampled, z_vals, mask_xyz = sample_points_in_box(rays, self.bbox_aabb, self.n_samples, self.step_size, 0, False)
         _, manipulated_points = split_points_minimal(xyz_sampled.view(-1, 3), bbox_instance["extent"].unsqueeze(0), (bbox_instance["position"] + translation).unsqueeze(0), (rotation @ bbox_instance["orientation"]).unsqueeze(0))
         manipulated_points = manipulated_points[0]
+
+        ########################
+        semantic_features = tensorf.compute_semantic_feature(xyz_sampled[mask_xyz])
+        valid_semantics = tensorf.render_semantic_mlp(None, semantic_features)
+
+        semantic_ids = torch.argmax(valid_semantics, -1)
+        mask_ones_id = torch.nonzero(mask_xyz.view(-1) == 1).squeeze(-1)
+        # print (torch.unique(semantic_ids))
+        deletion_ids = mask_ones_id[semantic_ids == 21]
+        manipulated_points[deletion_ids] = True
+        ########################
+
         _, bbox_points = split_points_minimal(xyz_sampled.view(-1, 3), bbox_instance["extent"].unsqueeze(0), bbox_instance["position"].unsqueeze(0), bbox_instance["orientation"].unsqueeze(0))
         bbox_points = bbox_points[0]
         orig_dim_xyz = xyz_sampled.shape
