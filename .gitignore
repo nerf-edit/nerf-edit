@@ -5,6 +5,8 @@ lightning_logs/
 runs/
 runs
 
+*.zip 
+
 *.pyd
 
 # Editors

@@ -1,6 +1,7 @@
 # Copyright (c) Meta Platforms, Inc. All Rights Reserved
 
 import sys
+sys.path.append('/home/pkatara/panoptic_lifting')
 import random
 import omegaconf
 import torch
