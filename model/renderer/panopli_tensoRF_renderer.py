@@ -86,6 +86,7 @@ class TensoRFRenderer(nn.Module):
         semantics = torch.zeros((*xyz_sampled.shape[:2], tensorf.num_semantic_classes), device=xyz_sampled.device)
         instances = torch.zeros((*xyz_sampled.shape[:2], tensorf.dim_feature_instance), device=xyz_sampled.device)
         # regfeats = torch.zeros((*xyz_sampled.shape[:2], 384), device=xyz_sampled.device)
+        text_features = torch.zeros((*xyz_sampled.shape[:2], tensorf.dim_feature_text), device=xyz_sampled.device)
 
         xyz_sampled = self.normalize_coordinates(xyz_sampled)
         if mask_xyz.any():
@@ -147,7 +148,8 @@ class TensoRFRenderer(nn.Module):
             depth_map = torch.sum(weight * z_vals, -1)
 
         regfeat_map = torch.zeros([1, 1], device=rgb_map.device)
-        return rgb_map, semantic_map, instance_map, depth_map, regfeat_map, dist_regularizer
+        textfeat_map = None # check what map is
+        return rgb_map, semantic_map, instance_map, depth_map, regfeat_map, textfeat_map, dist_regularizer
 
     def forward_instance_feature(self, tensorf, rays, perturb, is_train):
         xyz_sampled, z_vals, mask_xyz = sample_points_in_box(rays, self.bbox_aabb, self.n_samples, self.step_size, perturb, is_train)

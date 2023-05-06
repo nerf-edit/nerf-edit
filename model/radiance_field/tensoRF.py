@@ -63,6 +63,11 @@ class TensorVMSplit(nn.Module):
             self.render_semantic_mlp = MLPRenderFeature(self.dim_semantics, num_semantic_classes, 0, 0, dim_mlp_semantics, output_activation=output_mlp_semantics)
         elif use_semantic_mlp:
             self.render_semantic_mlp = (MLPRenderSemanticFeature if not self.use_feature_reg else MLPRenderSemanticFeatureWithRegularization)(3, num_semantic_classes, output_activation=output_mlp_semantics)
+        text_features = True
+        if text_features:
+            dim_text_feature_embb = 256
+            dim_mlp_text = 3 # check this once
+            self.render_text_mlp = MLPRenderTextFeature(dim_text_feature_embb, 3, pe_view, pe_feat, dim_mlp_text)
 
     def init_one_svd(self, n_components, grid_resolution, scale):
         plane_coef, line_coef = [], []
@@ -116,6 +121,9 @@ class TensorVMSplit(nn.Module):
         return retval
 
     def compute_instance_feature(self, xyz_sampled):
+        return self.render_instance_mlp(xyz_sampled)
+
+    def compute_text_feature(self, xyz_sampled):
         return self.render_instance_mlp(xyz_sampled)
 
     @torch.no_grad()
@@ -193,6 +201,9 @@ class TensorVMSplit(nn.Module):
             for idx in range(len(self.semantic_plane)):
                 total = total + regularizer(self.semantic_plane[idx]) * 1e-2 + regularizer(self.semantic_line[idx]) * 1e-3
         return total
+
+    def tv_loss_text(self, regularizer):
+        pass
 
     def load_weights_debug(self, weights):
         self.density_plane.load_state_dict(get_parameters_from_state_dict(weights, 'density_plane'))
@@ -330,6 +341,44 @@ class MLPRenderSemanticFeatureWithRegularization(torch.nn.Module):
         mlp_in = torch.cat(indata, dim=-1)
         out = self.mlp_backbone(mlp_in)
         return out
+    
+
+class MLPRenderTextFeature(torch.nn.Module):
+
+    def __init__(self, in_channels, out_channels=3, pe_view=2, pe_feat=2, dim_mlp_color=128, output_activation=torch.sigmoid):
+        super().__init__()
+        self.pe_view = pe_view
+        self.pe_feat = pe_feat
+        self.output_channels = out_channels
+        self.view_independent = self.pe_view == 0 and self.pe_feat == 0
+        self.in_feat_mlp = 2 * pe_view * 3 + 2 * pe_feat * in_channels + in_channels + (3 if not self.view_independent else 0)
+        self.output_activation = output_activation
+        layer1 = torch.nn.Linear(self.in_feat_mlp, dim_mlp_color)
+        layer2 = torch.nn.Linear(dim_mlp_color, dim_mlp_color)
+        layer3 = torch.nn.Linear(dim_mlp_color, out_channels)
+
+        self.mlp = torch.nn.Sequential(layer1, torch.nn.ReLU(inplace=True), layer2, torch.nn.ReLU(inplace=True), layer3)
+        torch.nn.init.constant_(self.mlp[-1].bias, 0)
+
+    def forward(self, viewdirs, features):
+        indata = [features]
+        if not self.view_independent:
+            indata.append(viewdirs)
+        if self.pe_feat > 0:
+            indata += [MLPRenderFeature.positional_encoding(features, self.pe_feat)]
+        if self.pe_view > 0:
+            indata += [MLPRenderFeature.positional_encoding(viewdirs, self.pe_view)]
+        mlp_in = torch.cat(indata, dim=-1)
+        out = self.mlp(mlp_in)
+        out = self.output_activation(out)
+        return out
+
+    @staticmethod
+    def positional_encoding(positions, freqs):
+        freq_bands = (2 ** torch.arange(freqs).float()).to(positions.device)
+        pts = (positions[..., None] * freq_bands).reshape(positions.shape[:-1] + (freqs * positions.shape[-1],))
+        pts = torch.cat([torch.sin(pts), torch.cos(pts)], dim=-1)
+        return pts
 
 
 def render_features_direct(_viewdirs, appearance_features):
