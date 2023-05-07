@@ -24,7 +24,7 @@ from util.distinct_colors import DistinctColors
 from util.metrics import ConfusionMatrix
 from util.misc import visualize_mask, create_box, get_boundary_mask
 from util.panoptic_quality import panoptic_quality, panoptic_quality_match, _panoptic_quality_compute
-
+from scripts.demo_leg import get_text_features
 
 def get_keyframe_indices(filenames, window_size):
     """
@@ -343,6 +343,10 @@ def renumber_instances(src_folder, prefix='rs'):
     remapped_instance_to_semantic = {k: instance_to_semantic[remapped_instance_to_instance[k]] for k in range(new_instance_id)}
     export_dict[f'{prefix}_instance_to_semantic'] = remapped_instance_to_semantic
 
+    get_text_features(src_folder / 'text_data.pkl')
+    if (src_folder / 'text_data.pkl').exists():
+        export_dict = pickle.load(open(src_folder / 'text_data.pkl', 'rb'))
+
     Path(src_folder / f"{prefix}_instance").mkdir(exist_ok=True)
 
     # save instances
@@ -440,6 +444,7 @@ def map_panoptic_coco(src_folder, sc_classes='reduced', undistort=False):
     (src_folder / "m2f_notta_instance").mkdir(exist_ok=True)
     (src_folder / "m2f_notta_semantics").mkdir(exist_ok=True)
     (src_folder / "m2f_feats").mkdir(exist_ok=True)
+    (src_folder / "m2f_text_feats").mkdir(exist_ok=True)
     (src_folder / "m2f_probabilities").mkdir(exist_ok=True)
     (src_folder / "m2f_invalid").mkdir(exist_ok=True)
     (src_folder / "m2f_segments").mkdir(exist_ok=True)
