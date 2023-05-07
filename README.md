@@ -1,13 +1,11 @@
-## Panoptic Lifting for 3D Scene Understanding
+## Nerf-Edit: High Fidelity 3D Scene Editing 
 
 <hr/>
+[**Project Page**](https://nerf-edit.github.io/nerf-edit/) <br/>
 
-[**arXiv**](https://arxiv.org/abs/2212.09802) | [**Video**](https://youtu.be/QtsiL-6rSuM) | [**Project Page**](https://nihalsid.github.io/panoptic-lifting/) <br/>
+This README contains the details for the project implementation done in partial fulfilment of the course 16-824 (Visual Learning and Recognition):
 
-
-This repository contains the implementation for the paper:
-
-[**Panoptic Lifting for 3D Scene Understanding with Neural Fields**](https://arxiv.org/abs/2212.09802) by Yawar Siddiqui, Lorenzo Porzi, Samuel Rota Bulò, Norman Müller, Matthias Nießner, Angela Dai and Peter Kontschieder.
+[**Nerf-Edit: High Fidelity 3D Scene Editing **] by Pushkal Katara, Sarthak Bhagat and Shagun Uppal.
 
 <div>
 <div style="text-align: center">
@@ -47,7 +45,7 @@ Overall code structure is as follows:
 
 ## Pre-trained Models and Data
 
-Download the pretrained models from [here](https://drive.google.com/file/d/1dvkfZ9beYVsxG_RftZ6aguHP6FLgjAC3/view?usp=sharing) and the corresponding processed scene data from [here](https://drive.google.com/file/d/1I6Y7IqSEmWl_T4CRUj-TmlUgejjexCa7/view?usp=sharing). Extract both zips in the project root directory, such that trained models are in `pretrained-examples/` directory and data is in `data/` directory.
+Download the pretrained models from [here](https://drive.google.com/file/d/1dvkfZ9beYVsxG_RftZ6aguHP6FLgjAC3/view?usp=sharing) and the corresponding processed scene data from [here](https://drive.google.com/file/d/1I6Y7IqSEmWl_T4CRUj-TmlUgejjexCa7/view?usp=sharing). Extract both zips in the project root directory, such that trained models are in `pretrained-examples/` directory and data is in `data/` directory. More [pretrained models](https://drive.google.com/file/d/1KsIq4MBIDIa08gREoRWePI0qXYJE_4HW/view?usp=sharing) and [data](https://drive.google.com/file/d/1ks0z8bJgaqDlEWFKQq-W6T6BS2UPj57F/view?usp=sharing) from ScanNet dataset are also provided.
 
 ### Running inference
 
