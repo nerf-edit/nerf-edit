@@ -33,7 +33,7 @@ class TensorVMSplit(nn.Module):
 
     def __init__(self, grid_dim, num_density_comps=(16, 16, 16), num_appearance_comps=(48, 48, 48), num_semantics_comps=None, dim_appearance=27,
                  dim_semantics=27, splus_density_shift=-10, pe_view=2, pe_feat=2, dim_mlp_color=128, dim_mlp_semantics=128, num_semantic_classes=0,
-                 output_mlp_semantics=torch.nn.Softmax(dim=-1), dim_mlp_instance=256, dim_feature_instance=None, dim_feature_text=256, dim_mlp_text=256, use_semantic_mlp=False, use_feature_reg=False):
+                 output_mlp_semantics=torch.nn.Softmax(dim=-1), dim_mlp_instance=256, dim_feature_instance=None, dim_feature_text=512, dim_mlp_text=512, use_semantic_mlp=False, use_feature_reg=False):
         super().__init__()
         self.num_density_comps = num_density_comps
         self.num_appearance_comps = num_appearance_comps

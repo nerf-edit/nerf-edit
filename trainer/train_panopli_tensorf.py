@@ -15,7 +15,7 @@ from torchvision.utils import save_image, make_grid
 from torch.utils.data import DataLoader
 from torch_scatter import scatter_mean
 import sys
-sys.path.append('/home/pkatara/panoptic_lifting')
+sys.path.append('/home/sarthakbhagat/code/nerf-edit/')
 from dataset import get_dataset, get_inconsistent_single_dataset, get_segment_dataset
 from model.loss.loss import TVLoss, get_semantic_weights, SCELoss
 from model.radiance_field.tensoRF import TensorVMSplit

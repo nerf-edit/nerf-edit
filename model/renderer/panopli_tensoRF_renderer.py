@@ -112,9 +112,10 @@ class TensoRFRenderer(nn.Module):
 
             instance_features = tensorf.compute_instance_feature(xyz_sampled[appearance_mask])
             instances[appearance_mask] = instance_features
-
+            
             text_features_ = tensorf.compute_text_feature(xyz_sampled[appearance_mask])
-            text_features[appearance_mask] = text_features_
+            # print(text_features_.shape, appearance_mask.shape) # 1284, 25; 2048, 440
+            # text_features[appearance_mask] = text_features_
             # if tensorf.use_feature_reg:
             #     regfeats[appearance_mask] = tensorf.render_semantic_mlp.get_backbone_feats(xyz_sampled[appearance_mask])
         # alpha, weight, bg_weight = self.raw_to_alpha(sigma, dists * self.distance_scale)

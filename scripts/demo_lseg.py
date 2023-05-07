@@ -9,8 +9,8 @@ from torch.utils import data
 import torchvision.transforms as transform
 from torch.nn.parallel.scatter_gather import gather
 import sys
-sys.path.append('/home/sarthakbhagat/code/nerf-edit')
-from lang_seg import utils
+sys.path.append('/home/sarthakbhagat/code/nerf-edit/')
+# from lang_seg import utils
 from encoding.nn import SegmentationLosses, SyncBatchNorm
 from encoding.parallel import DataParallelModel, DataParallelCriterion
 from encoding.datasets import test_batchify_fn 

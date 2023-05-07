@@ -24,7 +24,11 @@ from util.distinct_colors import DistinctColors
 from util.metrics import ConfusionMatrix
 from util.misc import visualize_mask, create_box, get_boundary_mask
 from util.panoptic_quality import panoptic_quality, panoptic_quality_match, _panoptic_quality_compute
-from scripts.demo_leg import get_text_features
+
+import sys
+sys.path.append('/home/sarthakbhagat/code/nerf-edit/')
+
+from scripts.demo_lseg import get_text_features
 
 def get_keyframe_indices(filenames, window_size):
     """

@@ -43,7 +43,7 @@ max_instances: 25
 chunk: 2048
 chunk_segment: 16384
 num_workers: 1
-logger: wandb
+logger: '' #wandb
 overfit: True
 min_grid_dim: 128
 max_grid_dim: 192

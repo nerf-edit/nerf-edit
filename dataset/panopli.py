@@ -168,9 +168,10 @@ class PanopLiDataset(BaseDataset):
             depth = depth_cam_s.float()
 
         if self.load_text_feat:
-            #npz = np.load(self.root_dir / f"{self.semantics_directory.split('_')[0]}_text_feats" / f"{self.all_frame_names[sample_index]}.npz")
-            #text_feat = torch.nn.functional.interpolate(torch.from_numpy(npz["feats"]).permute((2, 0, 1)).unsqueeze(0), size=self.image_dim[::-1], mode='bilinear', align_corners=False).squeeze(0).permute((1, 2, 0))
-            text_feat = torch.ones((512, 512, 256))
+            ## uncomment after running preprocessing for text features
+            # npz = np.load(self.root_dir / f"{self.semantics_directory.split('_')[0]}_text_feats" / f"{self.all_frame_names[sample_index]}.npz")
+            # text_feat = torch.nn.functional.interpolate(torch.from_numpy(npz["feats"]).permute((2, 0, 1)).unsqueeze(0), size=self.image_dim[::-1], mode='bilinear', align_corners=False).squeeze(0).permute((1, 2, 0))
+            text_feat = torch.ones((512, 512, 512))
 
         directions = get_ray_directions_with_intrinsics(self.image_dim[0], self.image_dim[1], self.intrinsics[sample_index].numpy())
         # directions = get_ray_directions_with_intrinsics_undistorted(self.image_dim[0], self.image_dim[1], self.intrinsics[sample_index].numpy(), self.distortion_params)

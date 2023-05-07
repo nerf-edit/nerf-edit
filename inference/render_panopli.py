@@ -1,7 +1,7 @@
 # Copyright (c) Meta Platforms, Inc. All Rights Reserved
 
 import sys
-sys.path.append('/home/pkatara/panoptic_lifting')
+sys.path.append('/home/sarthakbhagat/code/nerf-edit/')
 import random
 import omegaconf
 import torch
