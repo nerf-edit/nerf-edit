@@ -38,7 +38,7 @@ def render_panopli_checkpoint(config, trajectory_name, test_only=False):
     total_classes = len(test_set.segmentation_data.bg_classes) + len(test_set.segmentation_data.fg_classes)
     output_mlp_semantics = torch.nn.Identity() if config.semantic_weight_mode != "softmax" else torch.nn.Softmax(dim=-1)
     model = TensorVMSplit([config.min_grid_dim, config.min_grid_dim, config.min_grid_dim], num_semantics_comps=(32, 32, 32),
-                           num_semantic_classes=total_classes, dim_feature_instance=config.max_instances,
+                           num_semantic_classes=total_classes, dim_feature_instance=config.max_instances, dim_feature_text=config.dim_feature_text,
                            output_mlp_semantics=output_mlp_semantics, use_semantic_mlp=config.use_mlp_for_semantics)
     renderer = TensoRFRenderer(test_set.scene_bounds, [config.min_grid_dim, config.min_grid_dim, config.min_grid_dim], semantic_weight_mode=config.semantic_weight_mode)
     renderer.load_state_dict(get_parameters_from_state_dict(state_dict, "renderer"))

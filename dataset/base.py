@@ -38,7 +38,7 @@ def create_segmentation_data_sem(num_semantic_classes, instance_to_semantics, nu
 
 class BaseDataset(Dataset):
 
-    def __init__(self, root_dir, split, image_dim, max_depth, overfit=False, num_val_samples=8, load_depth=False, load_feat=False, instance_dir='filtered_pano_instance', semantics_dir='filtered_pano_sem',
+    def __init__(self, root_dir, split, image_dim, max_depth, overfit=False, num_val_samples=8, load_depth=False, load_feat=False, load_text_feat=False, instance_dir='filtered_pano_instance', semantics_dir='filtered_pano_sem',
                  instance_to_semantic_key='instance_to_semantic', create_seg_data_func=create_segmentation_data_base, subsample_frames=1, run_setup_data=True):
         self.root_dir = root_dir
         self.split = split
@@ -49,6 +49,7 @@ class BaseDataset(Dataset):
         self.white_bg = False
         self.load_depth = load_depth
         self.load_feat = load_feat
+        self.load_text_feat = load_text_feat
         self.instance_directory = instance_dir
         self.semantics_directory = semantics_dir
         self.instance_to_semantic_key = instance_to_semantic_key
@@ -90,6 +91,7 @@ class BaseDataset(Dataset):
                 "rgbs": self.all_rgbs[idx],
                 "semantics": self.all_semantics[idx],
                 "instances": self.all_instances[idx],
+                "text_feats": self.all_text_feats[idx] if self.load_text_feat else torch.zeros(1, 1),
                 "probabilities": self.all_probabilities[idx],
                 "confidences": self.all_confidences[idx],
                 "feats": self.all_feats[idx] if self.load_feat else torch.zeros(1, 1),
@@ -97,12 +99,13 @@ class BaseDataset(Dataset):
             }
         elif self.split == "val" or self.split == "test":
             sample_idx = self.val_indices[idx % len(self.val_indices)]
-            image, rays, semantics, instances, depth, _, prob, conf, _, mask = self.load_sample(sample_idx)
+            image, rays, semantics, instances, depth, _, text_feats, prob, conf, _, mask = self.load_sample(sample_idx)
             sample = {
                 "rays": rays,
                 "rgbs": image,
                 "semantics": semantics,
                 "instances": instances,
+                "text_feats": text_feats,
                 "probabilities": prob,
                 "confidences": conf,
                 "mask": mask,

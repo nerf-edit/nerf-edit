@@ -33,7 +33,7 @@ class TensorVMSplit(nn.Module):
 
     def __init__(self, grid_dim, num_density_comps=(16, 16, 16), num_appearance_comps=(48, 48, 48), num_semantics_comps=None, dim_appearance=27,
                  dim_semantics=27, splus_density_shift=-10, pe_view=2, pe_feat=2, dim_mlp_color=128, dim_mlp_semantics=128, num_semantic_classes=0,
-                 output_mlp_semantics=torch.nn.Softmax(dim=-1), dim_mlp_instance=256, dim_feature_instance=None, use_semantic_mlp=False, use_feature_reg=False):
+                 output_mlp_semantics=torch.nn.Softmax(dim=-1), dim_mlp_instance=256, dim_feature_instance=None, dim_feature_text=256, dim_mlp_text=256, use_semantic_mlp=False, use_feature_reg=False):
         super().__init__()
         self.num_density_comps = num_density_comps
         self.num_appearance_comps = num_appearance_comps
@@ -41,6 +41,7 @@ class TensorVMSplit(nn.Module):
         self.dim_appearance = dim_appearance
         self.dim_semantics = dim_semantics
         self.dim_feature_instance = dim_feature_instance
+        self.dim_feature_text = dim_feature_text
         self.num_semantic_classes = num_semantic_classes
         self.splus_density_shift = splus_density_shift
         self.use_semantic_mlp = use_semantic_mlp
@@ -65,9 +66,9 @@ class TensorVMSplit(nn.Module):
             self.render_semantic_mlp = (MLPRenderSemanticFeature if not self.use_feature_reg else MLPRenderSemanticFeatureWithRegularization)(3, num_semantic_classes, output_activation=output_mlp_semantics)
         text_features = True
         if text_features:
-            dim_text_feature_embb = 256
-            dim_mlp_text = 3 # check this once
-            self.render_text_mlp = MLPRenderTextFeature(dim_text_feature_embb, 3, pe_view, pe_feat, dim_mlp_text)
+            self.dim_feature_text = dim_feature_text
+            self.dim_mlp_text = dim_mlp_text
+            self.render_text_mlp = MLPRenderTextFeature(dim_feature_text, 3, pe_view, pe_feat, dim_mlp_text)
 
     def init_one_svd(self, n_components, grid_resolution, scale):
         plane_coef, line_coef = [], []

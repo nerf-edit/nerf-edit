@@ -1,3 +1,6 @@
 [submodule "Grounded-Segment-Anything"]
 	path = Grounded-Segment-Anything
 	url = https://github.com/IDEA-Research/Grounded-Segment-Anything.git
+[submodule "lang-seg"]
+	path = lang-seg
+	url = https://github.com/isl-org/lang-seg.git

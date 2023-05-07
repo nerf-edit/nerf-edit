@@ -20,15 +20,16 @@ from util.ray import get_ray_directions_with_intrinsics, get_rays, rays_intersec
 
 class PanopLiDataset(BaseDataset):
 
-    def __init__(self, root_dir, split, image_dim, max_depth, overfit=False, num_val_samples=8, load_depth=False, load_feat=False, instance_dir='filtered_instance', semantics_dir="filtered_semantics",
+    def __init__(self, root_dir, split, image_dim, max_depth, overfit=False, num_val_samples=8, load_depth=False, load_feat=False, load_text_feat=False, instance_dir='filtered_instance', semantics_dir="filtered_semantics",
                  instance_to_semantic_key='instance_to_semantic', create_seg_data_func=create_segmentation_data_base, subsample_frames=1):
-        super().__init__(root_dir, split, image_dim, max_depth, overfit, num_val_samples, load_depth, load_feat, instance_dir, semantics_dir, instance_to_semantic_key, create_seg_data_func, subsample_frames, False)
+        super().__init__(root_dir, split, image_dim, max_depth, overfit, num_val_samples, load_depth, load_feat, load_text_feat, instance_dir, semantics_dir, instance_to_semantic_key, create_seg_data_func, subsample_frames, False)
         self.faulty_classes = [0]
         self.is_thing = get_thing_semantics()
         self.all_frame_names = []
         self.all_probabilities, self.all_confidences = [], []
         self.all_origins = []
         self.all_feats = []
+        self.all_text_feats = []
         self.world2scene = np.eye(4, dtype=np.float32)
         self.force_reset_fov = False
         self.full_train_set_mode = True
@@ -94,7 +95,7 @@ class PanopLiDataset(BaseDataset):
 
         if self.split == "train":
             for sample_index in tqdm(self.train_indices, desc='dataload'):
-                image, rays, semantics, instances, depth, _, probabilities, confidences, feat, room_mask = self.load_sample(sample_index)
+                image, rays, semantics, instances, depth, _, probabilities, confidences, feat, text_feat, room_mask = self.load_sample(sample_index)
                 self.all_rgbs.append(image)
                 self.all_rays.append(rays)
                 self.all_semantics.append(semantics)
@@ -106,6 +107,8 @@ class PanopLiDataset(BaseDataset):
                     self.all_feats.append(feat)
                 if self.load_depth:
                     self.all_depths.append(depth)
+                if self.load_text_feat:
+                    self.all_text_feats.append(text_feat)
                 self.all_origins.append(torch.ones_like(semantics) * sample_index)
             self.all_rgbs = torch.cat(self.all_rgbs, 0)
             self.all_rays = torch.cat(self.all_rays, 0)
@@ -161,6 +164,11 @@ class PanopLiDataset(BaseDataset):
             depth_cam = torch.from_numpy(np.array(Image.fromarray(raw_depth).resize(self.image_dim[::-1], Image.NEAREST)))
             depth_cam_s = self.normscene_scale * depth_cam
             depth = depth_cam_s.float()
+        
+        if self.load_text_feat:
+            #npz = np.load(self.root_dir / f"{self.semantics_directory.split('_')[0]}_text_feats" / f"{self.all_frame_names[sample_index]}.npz")
+            #feat = torch.nn.functional.interpolate(torch.from_numpy(npz["feats"]).permute((2, 0, 1)).unsqueeze(0), size=self.image_dim[::-1], mode='bilinear', align_corners=False).squeeze(0).permute((1, 2, 0))
+            text_feat = torch.zeros(30)
 
         directions = get_ray_directions_with_intrinsics(self.image_dim[0], self.image_dim[1], self.intrinsics[sample_index].numpy())
         # directions = get_ray_directions_with_intrinsics_undistorted(self.image_dim[0], self.image_dim[1], self.intrinsics[sample_index].numpy(), self.distortion_params)
@@ -179,7 +187,7 @@ class PanopLiDataset(BaseDataset):
             room_mask = torch.ones(rays.shape[0]).bool()
         return image.reshape(-1, 3), rays, semantics.reshape(-1), instances.reshape(-1), depth.reshape(-1), \
                depth_cam.reshape(-1), probabilities.reshape(-1, probabilities.shape[-1]), confidences.reshape(-1),\
-               feat.reshape(-1, feat.shape[-1]), room_mask.reshape(-1)
+               feat.reshape(-1, feat.shape[-1]), text_feat.reshape(-1, text_feat.shape[-1]), room_mask.reshape(-1)
 
     def export_point_cloud(self, output_path, subsample=1, export_semantics=False, export_bbox=False):
         super().export_point_cloud(output_path, subsample, export_semantics, export_bbox)

@@ -13,8 +13,10 @@ semantic_weight_mode: softmax
 late_semantic_optimization: 0
 use_symmetric_ce: False
 probabilistic_ce_mode: "TTAConf"
-use_feature_regularization: True
+use_feature_regularization: False
 lambda_feat: 0.04
+use_text_feature: True
+lambda_text_feat: 0.05
 ce_alpha: 0.85
 ce_beta: 0.15
 lr: 5e-4
@@ -39,9 +41,9 @@ batch_size_segments: 32
 max_instances: 25
 chunk: 2048
 chunk_segment: 16384
-num_workers: 8
+num_workers: 1
 logger: wandb
-overfit: False
+overfit: True
 min_grid_dim: 128
 max_grid_dim: 192
 
