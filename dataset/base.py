@@ -105,7 +105,7 @@ class BaseDataset(Dataset):
                 "rgbs": image,
                 "semantics": semantics,
                 "instances": instances,
-                "text_feats": text_feats,
+                "text_feats": text_feats if self.load_text_feat else torch.zeros(1, 1),
                 "probabilities": prob,
                 "confidences": conf,
                 "mask": mask,

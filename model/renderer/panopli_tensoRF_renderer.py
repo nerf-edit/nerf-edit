@@ -33,6 +33,8 @@ from util.distinct_colors import DistinctColors
 from util.misc import visualize_points
 from util.transforms import tr_comp, dot, trs_comp
 
+import ipdb
+st = ipdb.set_trace
 
 class TensoRFRenderer(nn.Module):
 
@@ -87,7 +89,6 @@ class TensoRFRenderer(nn.Module):
         instances = torch.zeros((*xyz_sampled.shape[:2], tensorf.dim_feature_instance), device=xyz_sampled.device)
         # regfeats = torch.zeros((*xyz_sampled.shape[:2], 384), device=xyz_sampled.device)
         text_features = torch.zeros((*xyz_sampled.shape[:2], tensorf.dim_feature_text), device=xyz_sampled.device)
-
         xyz_sampled = self.normalize_coordinates(xyz_sampled)
         if mask_xyz.any():
             sigma[mask_xyz] = tensorf.compute_density(xyz_sampled[mask_xyz])
@@ -112,6 +113,8 @@ class TensoRFRenderer(nn.Module):
             instance_features = tensorf.compute_instance_feature(xyz_sampled[appearance_mask])
             instances[appearance_mask] = instance_features
 
+            text_features_ = tensorf.compute_text_feature(xyz_sampled[appearance_mask])
+            text_features[appearance_mask] = text_features_
             # if tensorf.use_feature_reg:
             #     regfeats[appearance_mask] = tensorf.render_semantic_mlp.get_backbone_feats(xyz_sampled[appearance_mask])
         # alpha, weight, bg_weight = self.raw_to_alpha(sigma, dists * self.distance_scale)
@@ -127,6 +130,8 @@ class TensoRFRenderer(nn.Module):
             w = w.detach()
             semantic_map = torch.sum(w * semantics, -2)
             instance_map = torch.sum(w * instances, -2)
+            if tensorf.text_features:
+                textfeat_map = torch.sum(w * text_features, -2)
             # if tensorf.use_feature_reg:
             #     regfeat_map = torch.sum(w * regfeats, -2)
         else:
@@ -148,8 +153,7 @@ class TensoRFRenderer(nn.Module):
             depth_map = torch.sum(weight * z_vals, -1)
 
         regfeat_map = torch.zeros([1, 1], device=rgb_map.device)
-        textfeat_map = None # check what map is
-        return rgb_map, semantic_map, instance_map, depth_map, regfeat_map, textfeat_map, dist_regularizer
+        return rgb_map, semantic_map, instance_map, depth_map, textfeat_map, regfeat_map, dist_regularizer
 
     def forward_instance_feature(self, tensorf, rays, perturb, is_train):
         xyz_sampled, z_vals, mask_xyz = sample_points_in_box(rays, self.bbox_aabb, self.n_samples, self.step_size, perturb, is_train)

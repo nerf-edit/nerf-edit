@@ -121,6 +121,8 @@ class PanopLiDataset(BaseDataset):
                 self.all_feats = torch.cat(self.all_feats, 0)
             if self.load_depth:
                 self.all_depths = torch.cat(self.all_depths, 0)
+            if self.load_text_feat:
+                self.all_text_feats = torch.cat(self.all_text_feats, 0)
             self.all_origins = torch.cat(self.all_origins, 0)
 
             # to debug scene categories
@@ -164,11 +166,11 @@ class PanopLiDataset(BaseDataset):
             depth_cam = torch.from_numpy(np.array(Image.fromarray(raw_depth).resize(self.image_dim[::-1], Image.NEAREST)))
             depth_cam_s = self.normscene_scale * depth_cam
             depth = depth_cam_s.float()
-        
+
         if self.load_text_feat:
             #npz = np.load(self.root_dir / f"{self.semantics_directory.split('_')[0]}_text_feats" / f"{self.all_frame_names[sample_index]}.npz")
-            #feat = torch.nn.functional.interpolate(torch.from_numpy(npz["feats"]).permute((2, 0, 1)).unsqueeze(0), size=self.image_dim[::-1], mode='bilinear', align_corners=False).squeeze(0).permute((1, 2, 0))
-            text_feat = torch.zeros(30)
+            #text_feat = torch.nn.functional.interpolate(torch.from_numpy(npz["feats"]).permute((2, 0, 1)).unsqueeze(0), size=self.image_dim[::-1], mode='bilinear', align_corners=False).squeeze(0).permute((1, 2, 0))
+            text_feat = torch.ones((512, 512, 256))
 
         directions = get_ray_directions_with_intrinsics(self.image_dim[0], self.image_dim[1], self.intrinsics[sample_index].numpy())
         # directions = get_ray_directions_with_intrinsics_undistorted(self.image_dim[0], self.image_dim[1], self.intrinsics[sample_index].numpy(), self.distortion_params)
@@ -265,9 +267,9 @@ class InconsistentPanopLiDataset(PanopLiDataset):
 class InconsistentPanopLiSingleDataset(PanopLiDataset):
 
     def __init__(self, root_dir, split, image_dim, max_depth, overfit=False, num_val_samples=8, max_rays=512, semantics_dir='filtered_semantics',
-                 instance_dir='filtered_instance_inc', instance_to_semantic_key='instance_to_semantic_inc', create_seg_data_func=create_segmentation_data_base, subsample_frames=1):
+                 instance_dir='filtered_instance_inc', instance_to_semantic_key='instance_to_semantic_inc', create_seg_data_func=create_segmentation_data_base, subsample_frames=1, load_text_feat=False):
         super().__init__(root_dir, split, image_dim, max_depth, overfit, num_val_samples, semantics_dir=semantics_dir,
-                         instance_dir=instance_dir, instance_to_semantic_key=instance_to_semantic_key, create_seg_data_func=create_seg_data_func, subsample_frames=subsample_frames)
+                         instance_dir=instance_dir, instance_to_semantic_key=instance_to_semantic_key, create_seg_data_func=create_seg_data_func, subsample_frames=subsample_frames, load_text_feat=load_text_feat)
         print('Preparing InconsistentPanopLiDataset...')
         all_rays_view = self.all_rays.view(len(self.train_indices), self.image_dim[0] * self.image_dim[1], -1)
         all_instances_view = self.all_instances.view(len(self.train_indices), self.image_dim[0] * self.image_dim[1])
@@ -364,8 +366,8 @@ def create_segmentation_data_panopli_gt(dataset_ref, seg_data):
 class SegmentPanopLiDataset(PanopLiDataset):
 
     def __init__(self, root_dir, split, image_dim, max_depth, overfit=False, num_val_samples=8, max_rays=512, semantics_dir='filtered_semantics',
-                 instance_dir='filtered_instance_inc', instance_to_semantic_key='instance_to_semantic_inc', create_seg_data_func=create_segmentation_data_base, subsample_frames=1):
-        super().__init__(root_dir, split, image_dim, max_depth, overfit, num_val_samples, semantics_dir=semantics_dir,
+                 instance_dir='filtered_instance_inc', load_text_feat=False, instance_to_semantic_key='instance_to_semantic_inc', create_seg_data_func=create_segmentation_data_base, subsample_frames=1):
+        super().__init__(root_dir, split, image_dim, max_depth, overfit, num_val_samples, semantics_dir=semantics_dir, load_text_feat=load_text_feat,
                          instance_dir=instance_dir, instance_to_semantic_key=instance_to_semantic_key, create_seg_data_func=create_seg_data_func, subsample_frames=subsample_frames)
         print('Preparing SegmentPanopLi...')
         all_rays_view = self.all_rays.view(len(self.train_indices), self.image_dim[0] * self.image_dim[1], -1)

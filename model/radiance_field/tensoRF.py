@@ -64,8 +64,8 @@ class TensorVMSplit(nn.Module):
             self.render_semantic_mlp = MLPRenderFeature(self.dim_semantics, num_semantic_classes, 0, 0, dim_mlp_semantics, output_activation=output_mlp_semantics)
         elif use_semantic_mlp:
             self.render_semantic_mlp = (MLPRenderSemanticFeature if not self.use_feature_reg else MLPRenderSemanticFeatureWithRegularization)(3, num_semantic_classes, output_activation=output_mlp_semantics)
-        text_features = True
-        if text_features:
+        self.text_features = True
+        if self.text_features:
             self.dim_feature_text = dim_feature_text
             self.dim_mlp_text = dim_mlp_text
             self.render_text_mlp = MLPRenderTextFeature(dim_feature_text, 3, pe_view, pe_feat, dim_mlp_text)

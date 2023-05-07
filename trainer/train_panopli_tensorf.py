@@ -31,6 +31,8 @@ torch.backends.cudnn.benchmark = True
 torch.backends.cudnn.allow_tf32 = True
 torch.backends.cudnn.deterministic = False
 
+import ipdb
+st = ipdb.set_trace
 
 class TensoRFTrainer(pl.LightningModule):
 
@@ -101,7 +103,7 @@ class TensoRFTrainer(pl.LightningModule):
         out_instances = torch.cat(out_instances, 0)
         out_depth = torch.cat(out_depth, 0)
         out_semantics = torch.cat(out_semantics, 0)
-        out_regfeat = torch.cat(out_regfeat, 0)
+        #out_regfeat = torch.cat(out_regfeat, 0)
         out_text = torch.cat(out_text, 0)
         out_dist_regularizer = torch.mean(torch.cat(out_dist_regularizer, 0))
         return out_rgb, out_semantics, out_instances, out_depth, out_text, out_regfeat, out_dist_regularizer
@@ -130,7 +132,7 @@ class TensoRFTrainer(pl.LightningModule):
         opts = self.optimizers()
         opts[0].zero_grad(set_to_none=True)
         rays, rgbs, semantics, probs, confs, masks, feats, text_feats = batch[0]['rays'], batch[0]['rgbs'], batch[0]['semantics'], batch[0]['probabilities'], batch[0]['confidences'], batch[0]['mask'], batch[0]['feats'], batch[0]['text_feats']
-        output_rgb, output_semantics, output_instances, _output_depth, output_feats, output_text_feats, loss_dist_reg = self(rays, True)
+        output_rgb, output_semantics, output_instances, _output_depth, output_text_feats, output_feats, loss_dist_reg = self(rays, True)
         output_rgb[~masks, :] = 0
         rgbs[~masks, :] = 0
         confs[~masks] = 0
@@ -149,6 +151,7 @@ class TensoRFTrainer(pl.LightningModule):
             loss = self.config.lambda_rgb * (loss_rgb + loss_tv + loss_dist_reg * self.current_lambda_dist_reg + loss_feat * self.config.lambda_feat + loss_text_feats * self.config.lambda_text_feat)
             self.log("train/loss_rgb", loss_rgb, on_step=True, on_epoch=False, prog_bar=True, logger=True, sync_dist=True)
             self.log("train/loss_feat", loss_feat, on_step=True, on_epoch=False, prog_bar=False, logger=True, sync_dist=True)
+            self.log("train/loss_text_feat", loss_text_feats, on_step=True, on_epoch=False, prog_bar=False, logger=True, sync_dist=True)
             self.log("train/loss_tv_regularizer", loss_tv_appearance + loss_tv_density, on_step=True, on_epoch=False, prog_bar=False, logger=True, sync_dist=True)
             self.log("train/loss_dist_regularizer", loss_dist_reg + loss_tv_density, on_step=True, on_epoch=False, prog_bar=True, logger=True, sync_dist=True)
         if self.config.probabilistic_ce_mode == "TTAConf":
@@ -227,7 +230,7 @@ class TensoRFTrainer(pl.LightningModule):
         raise NotImplementedError
 
     def validation_step(self, batch, batch_idx):
-        rays, rgbs, semantics, instances, mask = batch['rays'].squeeze(), batch['rgbs'].squeeze(), batch['semantics'].squeeze(), batch['instances'].squeeze(), batch['text'].squeeze(), batch['mask'].squeeze()
+        rays, rgbs, semantics, instances, text_feats, mask = batch['rays'].squeeze(), batch['rgbs'].squeeze(), batch['semantics'].squeeze(), batch['instances'].squeeze(), batch['text_feats'].squeeze(), batch['mask'].squeeze()
         rs_semantics, rs_instances = batch['rs_semantics'].squeeze(), batch['rs_instances'].squeeze()
         probs, confs = batch['probabilities'].squeeze(), batch['confidences'].squeeze()
         output_rgb, output_semantics, output_instances, _output_depth, _output_text, _, _ = self(rays, False)
